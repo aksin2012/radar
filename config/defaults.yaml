@@ -1,0 +1,15 @@
+app:
+  name: "Radar"
+  region_name: "Charlotte, NC, USA"
+  latitude: 35.2271
+  longitude: -80.8431
+  hazards: ["severe_weather", "flood", "heat"]
+
+data:
+  refresh_minutes: 60
+
+sources:
+  openweather:
+    enabled: true
+    base_url: "https://api.openweathermap.org/data/2.5/onecall"
+    units: "metric"
