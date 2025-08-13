@@ -1,28 +1,31 @@
 import json
 from pathlib import Path
-from typing import List
-from loguru import logger
-from .paths import DATA_PROCESSED
-from .schemas import Alert
-from .sources.nws import fetch_alerts_nc, filter_charlotte
+from radar.sources.nws import fetch_alerts_for_city
 
-OUTPUT = DATA_PROCESSED / "alerts.json"
+OUTPUT_FILE = Path("data/processed/alerts.json")
 
+# Major NC cities to check
+CITIES = {
+    "Charlotte": (35.2271, -80.8431),
+    "Raleigh": (35.7796, -78.6382),
+    "Greensboro": (36.0726, -79.7920),
+    "Durham": (35.9940, -78.8986),
+    "Wilmington": (34.2257, -77.9447),
+}
 
-def run_ingest() -> List[Alert]:
-    alerts_nc = fetch_alerts_nc(limit=100)
-    alerts_clt = filter_charlotte(alerts_nc)
-    logger.info(f"NC alerts: {len(alerts_nc)} | Charlotte-filtered: {len(alerts_clt)}")
+def save_alerts(alerts):
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(alerts, f, indent=2)
+    print(f"[INFO] Saved {len(alerts)} alerts to {OUTPUT_FILE}")
 
-    # Save as list of dicts
-    payload = [a.model_dump(mode="json") for a in alerts_clt]
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2, default=str)
+def main():
+    all_alerts = []
+    for city, (lat, lon) in CITIES.items():
+        city_alerts = fetch_alerts_for_city(city, lat, lon)
+        all_alerts.extend(city_alerts)
 
-    logger.info(f"Wrote {len(payload)} alerts -> {OUTPUT}")
-    return alerts_clt
-
+    save_alerts(all_alerts)
 
 if __name__ == "__main__":
-    run_ingest()
+    main()

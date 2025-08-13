@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from radar.config import load_config
 from radar.paths import DATA_RAW, DATA_PROCESSED
 from radar.utils_logging import setup_logging
-
+from radar import nlp, visuals
+from streamlit_folium import st_folium
 load_dotenv()
 logger = setup_logging()
 cfg = load_config()
@@ -62,6 +63,26 @@ if alerts_file.exists():
                     st.link_button("View full alert", a["raw_url"])
 else:
     st.info("No alerts file yet. Run the ingest step below.")
+st.subheader("Ask a question about current alerts")
+user_q = st.text_input("Type your question here:")
+# --- Map View ---
+st.subheader("Map of Current Alerts")
+if alerts:
+    m = visuals.alerts_map(alerts)
+    st_folium(m, width=700, height=500)
+else:
+    st.info("No alerts to map.")
+
+# --- Severity Table ---
+st.subheader("Alerts by Severity")
+for a in alerts:
+    st.markdown(f"**{a.get('event')}** — {a.get('severity', 'Unknown')} in {a.get('areaDesc')}")
+# --- Q and A section ---
+if user_q:
+    answer, matched_alerts = nlp.answer_question(user_q, alerts)
+    st.write(answer)
+    for a in matched_alerts:
+        st.markdown(f"- **{a.get('event')}** in {a.get('areaDesc')}")
 
 # --- Ingest helper (manual) ---
 st.divider()
